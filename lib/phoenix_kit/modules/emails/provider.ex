@@ -2,6 +2,8 @@ defmodule PhoenixKit.Modules.Emails.Provider do
   @moduledoc "Implements PhoenixKit.Email.Provider — unified email provider."
   @behaviour PhoenixKit.Email.Provider
 
+  require Logger
+
   alias PhoenixKit.Modules.Emails
   alias PhoenixKit.Modules.Emails.Interceptor
   alias PhoenixKit.Modules.Emails.Template

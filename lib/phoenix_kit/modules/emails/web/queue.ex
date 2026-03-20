@@ -37,7 +37,6 @@ defmodule PhoenixKit.Modules.Emails.Web.Queue do
 
   alias PhoenixKit.Modules.Emails
   alias PhoenixKit.Modules.Emails.{Log, RateLimiter}
-  alias PhoenixKit.Settings
   alias PhoenixKit.Utils.Date, as: UtilsDate
   alias PhoenixKit.Utils.Number, as: UtilsNumber
   alias PhoenixKit.Utils.Routes

@@ -38,7 +38,6 @@ defmodule PhoenixKit.Modules.Emails.Web.Emails do
 
   alias PhoenixKit.Modules.Emails
   alias PhoenixKit.Modules.Emails.TableColumns
-  alias PhoenixKit.Settings
   alias PhoenixKit.Utils.Routes
 
   @default_per_page 25

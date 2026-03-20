@@ -46,6 +46,7 @@ defmodule PhoenixKitEmailsTest do
 
   test "Provider responds to all required callbacks" do
     provider = PhoenixKit.Modules.Emails.Provider
+    Code.ensure_loaded!(provider)
 
     assert function_exported?(provider, :intercept_before_send, 2)
     assert function_exported?(provider, :handle_after_send, 2)

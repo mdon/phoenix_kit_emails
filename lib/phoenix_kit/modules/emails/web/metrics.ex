@@ -39,7 +39,6 @@ defmodule PhoenixKit.Modules.Emails.Web.Metrics do
   use PhoenixKitWeb, :live_view
 
   alias PhoenixKit.Modules.Emails
-  alias PhoenixKit.Settings
   alias PhoenixKit.Utils.Date, as: UtilsDate
   alias PhoenixKit.Utils.Number, as: UtilsNumber
   alias PhoenixKit.Utils.Routes

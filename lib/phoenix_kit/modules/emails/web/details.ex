@@ -38,7 +38,6 @@ defmodule PhoenixKit.Modules.Emails.Web.Details do
 
   alias PhoenixKit.Modules.Emails
   alias PhoenixKit.Modules.Emails.Log
-  alias PhoenixKit.Settings
   alias PhoenixKit.Utils.Date, as: UtilsDate
   alias PhoenixKit.Utils.Routes
 

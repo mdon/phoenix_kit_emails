@@ -43,7 +43,6 @@ defmodule PhoenixKit.Modules.Emails.Web.Blocklist do
 
   alias PhoenixKit.Modules.Emails
   alias PhoenixKit.Modules.Emails.RateLimiter
-  alias PhoenixKit.Settings
   alias PhoenixKit.Utils.Date, as: UtilsDate
   alias PhoenixKit.Utils.Routes
 

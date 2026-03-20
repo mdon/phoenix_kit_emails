@@ -33,7 +33,6 @@ defmodule PhoenixKit.Modules.Emails.Web.EmailTracking do
   use PhoenixKitWeb, :live_view
 
   alias PhoenixKit.Modules.Emails
-  alias PhoenixKit.Settings
 
   def mount(params, _session, socket) do
     # Handle locale
