@@ -737,6 +737,9 @@ defmodule PhoenixKit.Modules.Emails do
   def module_name, do: "Emails"
 
   @impl PhoenixKit.Module
+  def version, do: "0.1.0"
+
+  @impl PhoenixKit.Module
   def permission_metadata do
     %{
       key: "emails",
