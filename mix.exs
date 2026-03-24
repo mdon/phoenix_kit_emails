@@ -12,7 +12,10 @@ defmodule PhoenixKitEmails.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       package: package(),
-      description: "Email tracking, analytics, and AWS SES integration for PhoenixKit"
+      description: "Email tracking, analytics, and AWS SES integration for PhoenixKit",
+      source_url: @source_url,
+      homepage_url: @source_url,
+      docs: docs()
     ]
   end
 
@@ -23,7 +26,7 @@ defmodule PhoenixKitEmails.MixProject do
   defp deps do
     [
       # Core
-      {:phoenix_kit, "~> 1.7", path: "/app"},
+      {:phoenix_kit, "~> 1.7"},
       {:phoenix_live_view, "~> 1.1"},
       {:oban, "~> 2.20"},
       {:uuidv7, "~> 1.0"},
@@ -54,7 +57,16 @@ defmodule PhoenixKitEmails.MixProject do
     [
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url},
-      files: ~w(lib mix.exs README.md)
+      files: ~w(lib mix.exs README.md LICENSE.md CHANGELOG.md)
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      source_ref: "v#{@version}",
+      source_url: @source_url,
+      extras: ["README.md", "CHANGELOG.md", "LICENSE.md"]
     ]
   end
 end
