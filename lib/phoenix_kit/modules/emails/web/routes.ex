@@ -9,13 +9,15 @@ defmodule PhoenixKit.Modules.Emails.Web.Routes do
     export_controller = PhoenixKit.Modules.Emails.Web.ExportController
 
     quote do
+      # Webhook is public — AWS SNS sends POST requests without auth
       scope unquote(url_prefix) do
         pipe_through([:browser])
-
-        # Webhook (AWS SNS)
         post("/webhooks/ses", unquote(webhook_controller), :handle)
+      end
 
-        # Export
+      # Export requires admin authentication
+      scope unquote(url_prefix) do
+        pipe_through([:browser, :phoenix_kit_admin_only])
         get("/emails/export/:format", unquote(export_controller), :export)
       end
     end

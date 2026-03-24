@@ -419,10 +419,14 @@ defmodule PhoenixKit.Modules.Emails.Web.ExportController do
     DateTime.to_iso8601(datetime)
   end
 
-  # Escape CSV field value
+  # Escape CSV field value, including formula injection protection.
+  # Cells starting with =, +, -, @, tab, or CR are prefixed with a single quote
+  # to prevent formula execution when opened in spreadsheet applications.
   defp escape_csv_field(nil), do: ""
 
   defp escape_csv_field(value) when is_binary(value) do
+    value = sanitize_csv_formula(value)
+
     if String.contains?(value, [",", "\"", "\n", "\r"]) do
       "\"#{String.replace(value, "\"", "\"\"")}\""
     else
@@ -430,7 +434,14 @@ defmodule PhoenixKit.Modules.Emails.Web.ExportController do
     end
   end
 
-  defp escape_csv_field(value), do: to_string(value)
+  defp escape_csv_field(value), do: value |> to_string() |> escape_csv_field()
+
+  defp sanitize_csv_formula(<<first, _::binary>> = value)
+       when first in [?=, ?+, ?-, ?@, ?\t, ?\r] do
+    "'" <> value
+  end
+
+  defp sanitize_csv_formula(value), do: value
 
   # Extract message tag from message_tags map
   defp get_message_tag(message_tags) when is_map(message_tags) do

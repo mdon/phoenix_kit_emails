@@ -82,8 +82,9 @@ defmodule PhoenixKit.Modules.Emails.Web.WebhookController do
   alias PhoenixKit.Settings
   alias PhoenixKit.Utils.Date, as: UtilsDate
 
-  # Rate limiting configuration (commented out for future use)
-  # @default_rate_limit %{max_requests: 100, window_seconds: 60}
+  # Rate limiting: max 100 requests per 60 seconds per IP
+  @rate_limit_max 100
+  @rate_limit_window_ms :timer.seconds(60)
   # 5 minutes
   @max_request_age_seconds 300
   # 50KB
@@ -133,6 +134,15 @@ defmodule PhoenixKit.Modules.Emails.Web.WebhookController do
       |> put_resp_content_type("text/plain")
       |> send_resp(200, "OK")
     else
+      {:error, :rate_limited} ->
+        Logger.warning("Webhook rejected: rate limited", %{
+          remote_ip: get_remote_ip(conn)
+        })
+
+        conn
+        |> put_resp_content_type("text/plain")
+        |> send_resp(429, "Too Many Requests")
+
       {:error, :request_too_large} ->
         Logger.warning("Webhook rejected: request too large")
 
@@ -464,17 +474,13 @@ defmodule PhoenixKit.Modules.Emails.Web.WebhookController do
 
   defp ip_in_cidr_range?(_, _, _), do: false
 
-  # Rate limiting implementation (simple in-memory)
-  defp check_ip_rate_limit(_ip) do
-    # This is a simplified implementation
-    # In production, use a proper rate limiting solution like Hammer
-    # rate_limit_config = @default_rate_limit
-    # cache_key = "webhook_rate_limit:#{ip}"
-    # current_time = System.system_time(:second)
-    # window_start = current_time - rate_limit_config.window_seconds
+  defp check_ip_rate_limit(ip) do
+    key = "webhook:#{ip}"
 
-    # For now, always allow (implement proper rate limiting based on your needs)
-    :ok
+    case Hammer.check_rate(key, @rate_limit_max, @rate_limit_window_ms) do
+      {:allow, _count} -> :ok
+      {:deny, _limit} -> {:error, :rate_limited}
+    end
   end
 
   # Parse ISO8601 timestamp
@@ -485,26 +491,131 @@ defmodule PhoenixKit.Modules.Emails.Web.WebhookController do
     end
   end
 
-  # Verify AWS SNS signature (simplified implementation)
+  # Verify AWS SNS message signature per:
+  # https://docs.aws.amazon.com/sns/latest/dg/sns-verify-signature-of-message.html
   defp verify_aws_sns_signature(sns_message) do
-    # This is a simplified implementation
-    # In production, implement full SNS signature verification:
-    # https://docs.aws.amazon.com/sns/latest/dg/sns-verify-signature-of-message.html
+    with {:ok, signature} <- fetch_field(sns_message, "Signature"),
+         {:ok, cert_url} <- fetch_field(sns_message, "SigningCertURL"),
+         :ok <- validate_cert_url(cert_url),
+         {:ok, cert_pem} <- fetch_certificate(cert_url),
+         {:ok, public_key} <- extract_public_key(cert_pem),
+         signing_string <- build_signing_string(sns_message),
+         {:ok, decoded_sig} <- Base.decode64(signature) |> wrap_decode_result(),
+         true <- :public_key.verify(signing_string, :sha, decoded_sig, public_key) do
+      :ok
+    else
+      _ -> :error
+    end
+  end
 
-    signature = sns_message["Signature"]
-    signing_cert_url = sns_message["SigningCertURL"]
+  defp fetch_field(map, key) do
+    case map[key] do
+      value when is_binary(value) and value != "" -> {:ok, value}
+      _ -> :error
+    end
+  end
 
-    case {signature, signing_cert_url} do
-      {sig, cert_url} when is_binary(sig) and is_binary(cert_url) ->
-        # NOTE: Full SNS signature verification should be implemented for production security.
-        # Currently only verifying that signature and certificate URL are present.
-        # See: https://docs.aws.amazon.com/sns/latest/dg/sns-verify-signature-of-message.html
+  # Ensure the signing certificate URL is hosted by AWS SNS
+  defp validate_cert_url(url) do
+    uri = URI.parse(url)
+
+    cond do
+      uri.scheme != "https" ->
+        :error
+
+      not String.ends_with?(uri.host || "", ".amazonaws.com") ->
+        :error
+
+      true ->
         :ok
+    end
+  end
+
+  # Fetch the PEM certificate from AWS (with simple in-memory cache via persistent_term)
+  defp fetch_certificate(cert_url) do
+    cache_key = {:sns_cert_cache, cert_url}
+
+    case :persistent_term.get(cache_key, nil) do
+      nil ->
+        case fetch_certificate_http(cert_url) do
+          {:ok, pem} ->
+            :persistent_term.put(cache_key, pem)
+            {:ok, pem}
+
+          error ->
+            error
+        end
+
+      pem ->
+        {:ok, pem}
+    end
+  end
+
+  defp fetch_certificate_http(cert_url) do
+    # Use Erlang's built-in :httpc (started with :inets)
+    :inets.start()
+    :ssl.start()
+
+    case :httpc.request(:get, {String.to_charlist(cert_url), []}, [{:timeout, 10_000}], []) do
+      {:ok, {{_, 200, _}, _headers, body}} ->
+        {:ok, List.to_string(body)}
 
       _ ->
         :error
     end
   end
+
+  defp extract_public_key(pem) do
+    case :public_key.pem_decode(pem) do
+      [{:Certificate, der, _} | _] ->
+        otp_cert = :public_key.pkix_decode_cert(der, :otp)
+        # OTPCertificate -> tbsCertificate -> subjectPublicKeyInfo -> subjectPublicKey
+        tbs = elem(otp_cert, 2)
+        spki = elem(tbs, 8)
+        {:ok, elem(spki, 2)}
+
+      _ ->
+        :error
+    end
+  rescue
+    _ -> :error
+  end
+
+  # Build the string-to-sign per AWS SNS specification.
+  # The fields and order depend on the message type.
+  defp build_signing_string(%{"Type" => type} = msg) do
+    fields =
+      case type do
+        "Notification" ->
+          [
+            {"Message", msg["Message"]},
+            {"MessageId", msg["MessageId"]},
+            {"Subject", msg["Subject"]},
+            {"Timestamp", msg["Timestamp"]},
+            {"TopicArn", msg["TopicArn"]},
+            {"Type", type}
+          ]
+
+        _ ->
+          # SubscriptionConfirmation / UnsubscribeConfirmation
+          [
+            {"Message", msg["Message"]},
+            {"MessageId", msg["MessageId"]},
+            {"SubscribeURL", msg["SubscribeURL"]},
+            {"Timestamp", msg["Timestamp"]},
+            {"Token", msg["Token"]},
+            {"TopicArn", msg["TopicArn"]},
+            {"Type", type}
+          ]
+      end
+
+    fields
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.map_join("", fn {k, v} -> "#{k}\n#{v}\n" end)
+  end
+
+  defp wrap_decode_result(:error), do: :error
+  defp wrap_decode_result({:ok, _} = ok), do: ok
 
   # Configuration helpers - uses Settings database for centralized configuration
   defp signature_verification_enabled? do

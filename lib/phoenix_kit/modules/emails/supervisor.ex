@@ -82,10 +82,7 @@ defmodule PhoenixKit.Modules.Emails.Supervisor do
     # Register unified email provider before starting children
     PhoenixKit.Modules.Emails.ApplicationIntegration.register()
 
-    children = build_children()
-
-    # Start initial SQS polling job if enabled
-    start_initial_sqs_polling_job()
+    children = build_children() ++ build_oban_starter()
 
     # Use :one_for_one strategy - if one process crashes,
     # only that one is restarted
@@ -248,15 +245,21 @@ defmodule PhoenixKit.Modules.Emails.Supervisor do
     }
   end
 
-  # Start initial SQS polling job if enabled
-  # Uses spawn to defer job creation until Oban is ready
-  defp start_initial_sqs_polling_job do
+  # Build a one-off supervised Task that waits for Oban, then starts the polling job.
+  # Returns an empty list if Oban polling is not needed.
+  defp build_oban_starter do
     if should_start_oban_polling?() do
-      # Spawn a process that waits for Oban to be ready before creating the job
-      spawn(fn ->
-        # Wait for Oban to start (max 10 attempts with 500ms delay)
-        wait_for_oban(10, 500)
+      [
+        {Task, fn -> start_oban_polling_when_ready() end}
+      ]
+    else
+      []
+    end
+  end
 
+  defp start_oban_polling_when_ready do
+    case wait_for_oban(10, 500) do
+      :ok ->
         Logger.info("Email Supervisor: Starting initial SQS polling job via Oban")
 
         case SQSPollingManager.enable_polling() do
@@ -268,17 +271,19 @@ defmodule PhoenixKit.Modules.Emails.Supervisor do
               reason: inspect(reason)
             })
         end
-      end)
+
+      :timeout ->
+        Logger.warning(
+          "Email Supervisor: Oban not available after timeout, skipping SQS polling job"
+        )
     end
   end
 
-  # Wait for Oban to be available
   defp wait_for_oban(0, _delay), do: :timeout
 
   defp wait_for_oban(attempts, delay) do
     case Oban.Registry.config(Oban) do
-      %Oban.Config{} ->
-        :ok
+      %Oban.Config{} -> :ok
     end
   catch
     _, _ ->
@@ -286,7 +291,6 @@ defmodule PhoenixKit.Modules.Emails.Supervisor do
       wait_for_oban(attempts - 1, delay)
   end
 
-  # Check if Oban-based polling should start
   defp should_start_oban_polling? do
     Emails.enabled?() &&
       Emails.ses_events_enabled?() &&
