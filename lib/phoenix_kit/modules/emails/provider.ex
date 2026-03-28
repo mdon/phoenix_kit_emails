@@ -7,6 +7,7 @@ defmodule PhoenixKit.Modules.Emails.Provider do
   alias PhoenixKit.Modules.Emails.Interceptor
   alias PhoenixKit.Modules.Emails.Template
   alias PhoenixKit.Modules.Emails.Templates
+  alias PhoenixKit.Modules.Emails.Utils
 
   # Interception — delegates to Interceptor
 
@@ -63,7 +64,7 @@ defmodule PhoenixKit.Modules.Emails.Provider do
   # Provider detection — delegates to Emails.Utils
 
   def adapter_to_provider_name(adapter, default) do
-    PhoenixKit.Modules.Emails.Utils.adapter_to_provider_name(adapter, default)
+    Utils.adapter_to_provider_name(adapter, default)
   end
 
   # Test tracking email — sends a test email with tracking enabled

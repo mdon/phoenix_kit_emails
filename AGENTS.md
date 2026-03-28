@@ -169,13 +169,13 @@ PR reviews are stored in `dev_docs/pull_requests/` and tracked in version contro
 ### Structure
 
 ```
-dev_docs/pull_requests/<year>/<pr_number>-<slug>/CLAUDE_REVIEW.md
+dev_docs/pull_requests/<year>/<pr_number>-<slug>/{AGENT}_REVIEW.md
 ```
 
 - **`<year>`** — year the PR was created (e.g., `2026`)
 - **`<pr_number>`** — GitHub PR number (e.g., `1`)
 - **`<slug>`** — short kebab-case summary from the PR title (e.g., `add-emails-package`)
-- **`CLAUDE_REVIEW.md`** — the review file, always named `CLAUDE_REVIEW.md`
+- **`{AGENT}_REVIEW.md`** — review file named after the reviewing agent (e.g., `CLAUDE_REVIEW.md`, `GEMINI_REVIEW.md`)
 
 ### Review file format
 

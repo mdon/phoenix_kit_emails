@@ -1,7 +1,7 @@
 defmodule PhoenixKitEmails.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.1.1"
   @source_url "https://github.com/BeamLabEU/phoenix_kit_emails"
 
   def project do
@@ -9,18 +9,32 @@ defmodule PhoenixKitEmails.MixProject do
       app: :phoenix_kit_emails,
       version: @version,
       elixir: "~> 1.18",
+      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      aliases: aliases(),
       package: package(),
       description: "Email tracking, analytics, and AWS SES integration for PhoenixKit",
       source_url: @source_url,
       homepage_url: @source_url,
+      dialyzer: [plt_add_apps: [:phoenix_kit, :mix]],
       docs: docs()
     ]
   end
 
   def application do
     [extra_applications: [:logger]]
+  end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
+  defp aliases do
+    [
+      quality: ["format", "credo --strict", "dialyzer"],
+      "quality.ci": ["format --check-formatted", "credo --strict", "dialyzer"],
+      precommit: ["compile", "quality"]
+    ]
   end
 
   defp deps do

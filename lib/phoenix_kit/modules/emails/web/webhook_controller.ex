@@ -1,5 +1,5 @@
 defmodule PhoenixKit.Modules.Emails.Web.WebhookController do
-  @compile {:no_warn_undefined, [Hammer]}
+  @compile {:no_warn_undefined, [PhoenixKit.Users.RateLimiter.Backend]}
   @moduledoc """
   Secure webhook controller for AWS SNS email events.
 
@@ -81,6 +81,7 @@ defmodule PhoenixKit.Modules.Emails.Web.WebhookController do
 
   alias PhoenixKit.Modules.Emails
   alias PhoenixKit.Settings
+  alias PhoenixKit.Users.RateLimiter.Backend, as: RateLimiterBackend
   alias PhoenixKit.Utils.Date, as: UtilsDate
 
   # Rate limiting: max 100 requests per 60 seconds per IP
@@ -478,9 +479,9 @@ defmodule PhoenixKit.Modules.Emails.Web.WebhookController do
   defp check_ip_rate_limit(ip) do
     key = "webhook:#{ip}"
 
-    case Hammer.check_rate(key, @rate_limit_max, @rate_limit_window_ms) do
+    case RateLimiterBackend.hit(key, @rate_limit_window_ms, @rate_limit_max) do
       {:allow, _count} -> :ok
-      {:deny, _limit} -> {:error, :rate_limited}
+      {:deny, _retry_after} -> {:error, :rate_limited}
     end
   end
 

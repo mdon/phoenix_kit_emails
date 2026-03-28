@@ -436,6 +436,7 @@ defmodule PhoenixKit.Modules.Emails.Archiver do
     end
   end
 
+  @dialyzer {:nowarn_function, archive_batch_to_s3: 6}
   defp archive_batch_to_s3(logs, bucket, prefix, format, include_events, delete_after) do
     timestamp = UtilsDate.utc_now() |> DateTime.to_iso8601()
     batch_id = :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
@@ -539,6 +540,7 @@ defmodule PhoenixKit.Modules.Emails.Archiver do
       {:error, "S3 upload exception: #{Exception.message(error)}"}
   end
 
+  @dialyzer {:nowarn_function, delete_archived_logs: 1}
   defp delete_archived_logs(logs) do
     log_uuids = Enum.map(logs, & &1.uuid)
 

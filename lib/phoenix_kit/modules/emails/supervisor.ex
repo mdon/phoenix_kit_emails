@@ -80,7 +80,8 @@ defmodule PhoenixKit.Modules.Emails.Supervisor do
   @doc false
   def init(_opts) do
     # Register unified email provider before starting children
-    PhoenixKit.Modules.Emails.ApplicationIntegration.register()
+    alias PhoenixKit.Modules.Emails.ApplicationIntegration
+    ApplicationIntegration.register()
 
     children = build_children() ++ build_oban_starter()
 
