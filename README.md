@@ -1,7 +1,7 @@
 # PhoenixKitEmails
 
 [![Elixir](https://img.shields.io/badge/Elixir-~%3E_1.18-4B275F)](https://elixir-lang.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
 
 Email tracking, analytics, and AWS SES integration for [PhoenixKit](https://github.com/BeamLabEU/phoenix_kit). Drop-in email logging, delivery event tracking, engagement metrics, templating, rate limiting, and an admin dashboard.
 
@@ -237,7 +237,7 @@ mix quality        # Format + credo + dialyzer
 
 ## License
 
-MIT — see [LICENSE](LICENSE) for details.
+MIT — see [LICENSE](LICENSE.md) for details.
 
 ## Links
 
