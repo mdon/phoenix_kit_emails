@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] - 2026-04-02
+
+### Fixed
+
+- Changed `css_sources/0` return type from atom to binary to match `PhoenixKit.Module` behaviour callback spec.
+
+### Changed
+
+- Rewrote README to match sibling project structure with full documentation.
+
 ## [0.1.1] - 2026-03-27
 
 ### Fixed
@@ -35,5 +45,6 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - CSV formula injection protection in exports.
 - Install mix task (`mix phoenix_kit_emails.install`).
 
+[0.1.2]: https://github.com/BeamLabEU/phoenix_kit_emails/releases/tag/0.1.2
 [0.1.1]: https://github.com/BeamLabEU/phoenix_kit_emails/releases/tag/0.1.1
 [0.1.0]: https://github.com/BeamLabEU/phoenix_kit_emails/releases/tag/0.1.0
